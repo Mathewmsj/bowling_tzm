@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单保龄球游戏</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.0/dist/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        var config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        var game = new Phaser.Game(config);
+
+        var ball;
+        var ballSpeed = 5;
+        var isRolling = false;
+        var pins = [];
+        var score = 0;
+        var scoreText;
+        var currentBall = 'ball1';  // 当前选择的保龄球
+
+        // 预加载资源
+        function preload() {
+            // 载入两种保龄球图像
+            this.load.image('ball1', 'https://Mathewmsj.github.io/bowling_tzm/tzm1.png');  // 第一种球
+            this.load.image('ball2', 'https://Mathewmsj.github.io/bowling_tzm/tzm2.png');  // 第二种球
+            this.load.image('pin', 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Bowling_pin.svg');  // 保龄球瓶
+        }
+
+        // 创建游戏场景
+        function create() {
+            // 创建得分显示
+            scoreText = this.add.text(20, 20, '得分: 0', { font: '24px Arial', fill: '#000' });
+
+            // 创建保龄球
+            ball = this.add.image(100, 550, currentBall);
+            ball.setScale(0.1);  // 初始球的大小
+
+            // 创建一个圆形的 mask 来裁剪球形
+            var circleMask = this.add.graphics();
+            circleMask.fillStyle(0xffffff, 1);
+            circleMask.fillCircle(0, 0, 50);  // 半径为 50，形成一个圆形 mask
+            ball.setMask(circleMask.createGeometryMask());  // 给保龄球设置圆形 mask
+
+            // 创建保龄球瓶
+            for (var i = 0; i < 10; i++) {
+                var pin = this.add.image(500 + (i % 5) * 60, 100 + Math.floor(i / 5) * 100, 'pin');
+                pin.setOrigin(0.5, 0.5);
+                pin.setScale(0.15);
+                pin.setInteractive();
+                pin.setData('active', true); // 设置瓶子为活动状态
+                pins.push(pin);
+            }
+
+            // 投掷保龄球：点击屏幕
+            this.input.on('pointerdown', function() {
+                if (!isRolling) {
+                    isRolling = true;
+                    ballSpeed = 5;
+                    this.tweens.add({
+                        targets: ball,
+                        x: 700, // 保龄球最终位置
+                        duration: 2000, // 动画时长
+                        ease: 'Linear',
+                        onComplete: function() {
+                            checkCollision();
+                        }
+                    });
+                }
+            }, this);
+
+            // 切换保龄球类型：点击右键切换
+            this.input.on('pointerdown', function(pointer, gameObject) {
+                if (pointer.rightButtonDown()) {
+                    currentBall = (currentBall === 'ball1') ? 'ball2' : 'ball1';  // 切换球的类型
+                    ball.setTexture(currentBall);  // 更新保龄球的贴图
+                    // 重新应用圆形 mask
+                    var circleMask = this.add.graphics();
+                    circleMask.fillStyle(0xffffff, 1);
+                    circleMask.fillCircle(0, 0, 50);  // 保持圆形 mask
+                    ball.setMask(circleMask.createGeometryMask());
+                }
+            }, this);
+        }
+
+        // 更新游戏状态
+        function update() {
+            // 保龄球滚动
+            if (isRolling && ball.x < 700) {
+                ball.x += ballSpeed;
+            }
+        }
+
+        // 检查保龄球是否击中瓶子
+        function checkCollision() {
+            pins.forEach(function(pin) {
+                if (pin.getData('active')) {
+                    var dist = Phaser.Math.Distance.Between(ball.x, ball.y, pin.x, pin.y);
+                    if (dist < 50) { // 保龄球与瓶子接触
+                        pin.setData('active', false);  // 设置瓶子为击倒状态
+                        pin.setAlpha(0);  // 隐藏瓶子
+                        score++;  // 增加得分
+                    }
+                }
+            });
+
+            // 更新得分
+            scoreText.setText('得分: ' + score);
+
+            // 如果所有瓶子都被击倒，游戏结束
+            if (pins.every(function(pin) { return !pin.getData('active'); })) {
+                scoreText.setText('游戏结束！得分: ' + score);
+                isRolling = false;
+            } else {
+                ball.x = 100;
+                ball.y = 550;
+                isRolling = false;
+            }
+        }
+    </script>
+</body>
+</html>
