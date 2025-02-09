@@ -39,12 +39,13 @@
         var score = 0;
         var scoreText;
         var currentBall = 'ball1';  // 当前选择的保龄球
+        var circleMask;
 
         // 预加载资源
         function preload() {
             // 载入两种保龄球图像
-            this.load.image('ball1', 'https://raw.githubusercontent.com/Mathewmsj/bowling_tzm/tzm1.png');  // 第一种球
-            this.load.image('ball2', 'https://raw.githubusercontent.com/Mathewmsj/bowling_tzm/tzm2.png');  // 第二种球
+            this.load.image('ball1', 'https://raw.githubusercontent.com/Mathewmsj/bowling_tzm/main/tzm1.png');
+            this.load.image('ball2', 'https://raw.githubusercontent.com/Mathewmsj/bowling_tzm/main/tzm2.png');  // 第二种球
             this.load.image('pin', 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Bowling_pin.svg');  // 保龄球瓶
         }
 
@@ -58,7 +59,7 @@
             ball.setScale(0.1);  // 初始球的大小
 
             // 创建一个圆形的 mask 来裁剪球形
-            var circleMask = this.add.graphics();
+            circleMask = this.add.graphics();
             circleMask.fillStyle(0xffffff, 1);
             circleMask.fillCircle(0, 0, 50);  // 半径为 50，形成一个圆形 mask
             ball.setMask(circleMask.createGeometryMask());  // 给保龄球设置圆形 mask
@@ -75,7 +76,7 @@
 
             // 投掷保龄球：点击屏幕
             this.input.on('pointerdown', function() {
-                if (!isRolling) {
+                if (!isRolling && !this.input.mousePointer.rightButtonDown()) {
                     isRolling = true;
                     ballSpeed = 5;
                     this.tweens.add({
@@ -90,13 +91,13 @@
                 }
             }, this);
 
-            // 切换保龄球类型：点击右键切换
-            this.input.on('pointerdown', function(pointer, gameObject) {
+            // 切换保龄球类型：右键切换
+            this.input.on('pointerdown', function(pointer) {
                 if (pointer.rightButtonDown()) {
                     currentBall = (currentBall === 'ball1') ? 'ball2' : 'ball1';  // 切换球的类型
                     ball.setTexture(currentBall);  // 更新保龄球的贴图
                     // 重新应用圆形 mask
-                    var circleMask = this.add.graphics();
+                    circleMask.clear();
                     circleMask.fillStyle(0xffffff, 1);
                     circleMask.fillCircle(0, 0, 50);  // 保持圆形 mask
                     ball.setMask(circleMask.createGeometryMask());
